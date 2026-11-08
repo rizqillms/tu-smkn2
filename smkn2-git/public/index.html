@@ -82,6 +82,7 @@
   <a href="#" onclick="show('laporan')">📝 Laporan Bulanan</a>
   <a href="#" id="nav-log" onclick="show('log')">🧾 Log Aktivitas</a>
   <a href="#" id="nav-profil" onclick="show('profil')">👤 Profil</a>
+  <a href="#" id="nav-pengguna" onclick="show('pengguna')">🔑 Pengguna</a>
 </nav>
 
 <div class="container">
@@ -294,7 +295,10 @@
         </div>
         <div style="margin-bottom:10px;"><label>Kendala</label><textarea name="kendala" rows="2" placeholder="Contoh: Data siswa belum lengkap dari wali kelas"></textarea></div>
         <div style="margin-bottom:10px;"><label>Catatan buat Kasubag</label><textarea name="catatan" rows="2"></textarea></div>
-        <div style="margin-bottom:14px;"><label>Foto Bukti Kegiatan</label><input name="foto" type="file" accept="image/*"></div>
+        <div class="form-row">
+          <div><label>Foto Bukti Kegiatan</label><input name="foto" type="file" accept="image/*"></div>
+          <div><label>File Laporan (PDF/DOC/XLS)</label><input name="file_laporan" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx"></div>
+        </div>
         <button class="btn" type="submit">Simpan Laporan</button>
       </form>
     </div>
@@ -302,12 +306,42 @@
   <div class="card">
     <h2>📋 Semua Laporan Bulan Ini</h2>
     <p class="sub">Kasubag: kasih Nilai + Komentar, lalu Simpan. Staff langsung lihat hasilnya.</p>
-    <table><tr><th>Nama</th><th>Divisi</th><th>Kegiatan</th><th>Target / Realisasi</th><th>Foto</th><th>Status</th><th>Nilai & Komentar</th></tr><tbody id="list-laporan"></tbody></table>
+    <table><tr><th>Nama</th><th>Divisi</th><th>Kegiatan</th><th>Target / Realisasi</th><th>Foto</th><th>File Laporan</th><th>Status</th><th>Nilai & Komentar</th></tr><tbody id="list-laporan"></tbody></table>
   </div>
   <div class="card" id="rekap-lap-card">
     <h2>📊 Rekap per Divisi</h2>
     <p class="sub">Berapa laporan masuk per divisi bulan ini.</p>
     <table><tr><th>Divisi</th><th>Total Laporan</th><th>Sudah Dinilai</th><th>Belum Dinilai</th></tr><tbody id="list-rekap-lap"></tbody></table>
+  </div>
+</div>
+
+<!-- PENGGUNA -->
+<div id="pengguna" class="hidden">
+  <div class="card">
+    <h2>🔑 Manajemen Akun Pengguna</h2>
+    <p class="sub">Buat akun login buat guru & staff biar bisa absen dan upload laporan. Kasubag/Admin yang bisa akses halaman ini.</p>
+    <button class="btn" onclick="toggleForm('form-user')">+ Buat Akun Baru</button>
+    <div id="form-user" class="hidden" style="margin-top:14px; background:#f0f9ff; padding:16px; border-radius:12px;">
+      <form onsubmit="return buatUser(event)">
+        <div class="form-row">
+          <div><label>Username (login)</label><input name="username" required placeholder="cth: budi"></div>
+          <div><label>Password (min. 6)</label><input name="password" required minlength="6" placeholder="cth: guru123"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Nama Lengkap</label><input name="nama" required placeholder="cth: Budi Santoso, S.Pd"></div>
+          <div><label>Role</label><select name="role"><option value="guru">Guru (absen & laporan sendiri)</option><option value="staff">Staff TU</option><option value="kasubag">Kasubag TU</option><option value="kepsek">Kepala Sekolah</option></select></div>
+        </div>
+        <div style="margin-bottom:14px;"><label>Hubungkan ke Data Pegawai (opsional)</label><select name="pegawai_id" id="user-pegawai"><option value="">-- Tidak dihubungkan --</option></select></div>
+        <button class="btn" type="submit">Buat Akun</button>
+      </form>
+    </div>
+    <div style="margin-top:14px; background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:12px; font-size:.84rem; color:#92400e;">
+      💡 <b>Cara guru buat akun:</b> Guru nggak daftar sendiri. Kasubag yang bikinin akunnya di sini, kasih tau username & password-nya ke guru. Guru login pakai itu buat absen.
+    </div>
+  </div>
+  <div class="card">
+    <h2>Daftar Akun</h2>
+    <table><tr><th>Username</th><th>Nama</th><th>Role</th><th>Aksi</th></tr><tbody id="list-users"></tbody></table>
   </div>
 </div>
 
@@ -367,7 +401,7 @@ const bs=document.getElementById('bulan-surat'); if(bs) bs.value=document.getEle
 const bl=document.getElementById('bulan-lap'); if(bl) bl.value=document.getElementById('bulan').value;
 
 function show(id) {
-  ['dashboard','surat-masuk','surat-keluar','absensi','pegawai','rekap','laporan','log','profil'].forEach(x => document.getElementById(x).classList.add('hidden'));
+  ['dashboard','surat-masuk','surat-keluar','absensi','pegawai','rekap','laporan','log','profil','pengguna'].forEach(x => document.getElementById(x).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   event.target.classList.add('active');
@@ -377,6 +411,7 @@ function show(id) {
   if (id==='pegawai') { loadPG(); loadNotifikasi(); }
   if (id==='dashboard') loadStats();
   if (id==='laporan') { loadDivisi(); loadPegawaiLap(); loadLaporan(); }
+  if (id==='pengguna') loadUsers();
   if (id==='log') loadLog();
   if (id==='profil') loadProfil();
 }
@@ -439,6 +474,7 @@ if (!canTU) {
     if (href.includes('surat') || href.includes('pegawai')) a.style.display = 'none';
   });
 }
+if (!['admin','kasubag'].includes(role)) { const np=document.getElementById('nav-pengguna'); if(np) np.style.display='none'; }
 if (!canRekap) document.querySelectorAll('nav a').forEach(a => { if ((a.getAttribute('onclick')||'').includes('rekap')) a.style.display='none'; });
 // ===== MODAL EDIT =====
 function showModal(html){
@@ -577,10 +613,11 @@ async function loadLaporan(){
       <td style="white-space:pre-line;font-size:.82rem;">${esc(r.kegiatan)}</td>
       <td style="font-size:.82rem;">Target: ${esc(r.target||'-')}<br>Realisasi: ${esc(r.realisasi||'-')}${r.kendala?`<br><span style="color:#b45309;">Kendala: ${esc(r.kendala)}</span>`:''}</td>
       <td>${r.foto?`<a href="/uploads/${r.foto}" target="_blank" class="btn btn-small">Lihat</a>`:'-'}</td>
+      <td>${r.file_laporan?`<a href="/uploads/${r.file_laporan}" target="_blank" class="btn btn-small">Unduh</a>`:'-'}</td>
       <td><span class="badge ${r.status==='Sudah Dinilai'?'badge-hadir':'badge-izin'}">${esc(r.status)}</span></td>
       <td>${nilaiBox}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Belum ada laporan bulan ini</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:#94a3b8;">Belum ada laporan bulan ini</td></tr>';
   // Rekap divisi
   const rk = await api('/api/laporan/rekap?bulan='+b).then(r=>r.json()).catch(()=>({rekapDivisi:[]}));
   document.getElementById('list-rekap-lap').innerHTML = (rk.rekapDivisi||[]).map(d=>`<tr><td>${esc(d.divisi)}</td><td>${d.total_laporan}</td><td>${d.sudah_dinilai}</td><td>${d.belum_dinilai}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8;">Belum ada data</td></tr>';
@@ -599,6 +636,35 @@ async function simpanNilai(id){
   const res = await api('/api/laporan/'+id+'/nilai',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nilai, komentar_kasubag})}).then(r=>r.json());
   if (res.ok) { toast('Nilai tersimpan!'); loadLaporan(); }
   else toast(res.error || 'Gagal simpan');
+}
+
+// ===== PENGGUNA =====
+async function loadUsers(){
+  const pg = await api('/api/pegawai').then(r=>r.json()).catch(()=>[]);
+  document.getElementById('user-pegawai').innerHTML = '<option value="">-- Tidak dihubungkan --</option>' + pg.map(p=>`<option value="${p.id}">${p.nama}</option>`).join('');
+  const rows = await api('/api/users').then(r=>r.json()).catch(()=>[]);
+  document.getElementById('list-users').innerHTML = rows.map(u=>`<tr><td><b>${esc(u.username)}</b></td><td>${esc(u.nama)}</td><td>${esc(u.role)}</td><td style="white-space:nowrap;"><button class="btn btn-small" onclick="resetPass(${u.id})">Reset Password</button> <button class="btn btn-small" style="background:#ef4444;" onclick="hapusUser(${u.id})">Hapus</button></td></tr>`).join('');
+}
+async function buatUser(e){
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  if (data.pegawai_id === '') data.pegawai_id = null;
+  const res = await api('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(r=>r.json());
+  if (res.ok) { toast('Akun dibuat! Beritahu username & password ke pengguna.'); e.target.reset(); loadUsers(); }
+  else toast(res.error || 'Gagal buat akun');
+  return false;
+}
+async function resetPass(id){
+  const pw = prompt('Password baru untuk akun ini (min. 6 karakter):');
+  if (!pw) return;
+  const res = await api('/api/users/'+id+'/reset-password',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})}).then(r=>r.json());
+  toast(res.ok ? 'Password berhasil direset!' : (res.error || 'Gagal reset'));
+}
+async function hapusUser(id){
+  if (!confirm('Hapus akun ini? Pengguna tidak bisa login lagi.')) return;
+  const res = await api('/api/users/'+id,{method:'DELETE'}).then(r=>r.json());
+  toast(res.ok ? 'Akun dihapus.' : (res.error || 'Gagal hapus'));
+  if (res.ok) loadUsers();
 }
 
 loadStats();
