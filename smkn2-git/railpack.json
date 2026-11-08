@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schema.railpack.com/railpack.schema.json",
+  "build": {
+    "provider": "node",
+    "nodeVersion": "20"
+  }
+}
