@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem TU SMKN 2 Rantau</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+  body { background:#f0f7ff; color:#1e293b; }
+  .topbar { background:linear-gradient(135deg,#0ea5e9,#2563eb); color:#fff; padding:16px 20px; display:flex; align-items:center; gap:14px; }
+  .topbar h1 { font-size:1.25rem; font-weight:800; }
+  .topbar .sub { font-size:.82rem; opacity:.92; }
+  nav { background:#fff; border-bottom:1px solid #e2e8f0; display:flex; overflow-x:auto; }
+  nav a { padding:13px 16px; text-decoration:none; color:#64748b; font-weight:600; font-size:.88rem; border-bottom:3px solid transparent; white-space:nowrap; }
+  nav a.active { color:#2563eb; border-bottom-color:#0ea5e9; }
+  .container { max-width:1020px; margin:0 auto; padding:22px 16px 40px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,.03); }
+  .card h2 { font-size:1.1rem; margin-bottom:6px; }
+  .card p.sub { color:#64748b; font-size:.86rem; margin-bottom:14px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  @media(max-width:700px){ .stat-grid{grid-template-columns:1fr 1fr;} }
+  .stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:16px; display:flex; align-items:center; gap:12px; }
+  .stat-icon { width:44px; height:44px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; }
+  .stat-icon.blue { background:linear-gradient(135deg,#0ea5e9,#2563eb); }
+  .stat-icon.green { background:linear-gradient(135deg,#22c55e,#16a34a); }
+  .stat-icon.amber { background:linear-gradient(135deg,#f59e0b,#d97706); }
+  .stat-icon.rose { background:linear-gradient(135deg,#f43f5e,#e11d48); }
+  .stat-info b { display:block; font-size:1.4rem; }
+  .stat-info span { font-size:.76rem; color:#64748b; }
+  table { width:100%; border-collapse:collapse; font-size:.86rem; }
+  th { background:#f0f9ff; color:#0369a1; text-align:left; padding:10px; border-bottom:2px solid #e0f2fe; font-size:.76rem; text-transform:uppercase; letter-spacing:.3px; }
+  td { padding:10px; border-bottom:1px solid #f1f5f9; }
+  .badge { display:inline-block; padding:3px 9px; border-radius:999px; font-size:.7rem; font-weight:700; }
+  .badge-masuk { background:#dbeafe; color:#1d4ed8; }
+  .badge-keluar { background:#dcfce7; color:#166534; }
+  .badge-hadir { background:#dcfce7; color:#166534; }
+  .badge-izin { background:#fef3c7; color:#92400e; }
+  .badge-sakit { background:#fee2e2; color:#991b1b; }
+  .btn { background:#2563eb; color:#fff; border:none; padding:10px 20px; border-radius:9px; font-weight:700; cursor:pointer; font-size:.88rem; }
+  .btn:hover { background:#1d4ed8; }
+  .btn-secondary { background:#fff; color:#2563eb; border:2px solid #2563eb; }
+  .btn-small { padding:5px 11px; font-size:.78rem; }
+  .btn-hadir { background:#22c55e; color:#fff; }
+  .btn-izin { background:#f59e0b; color:#fff; }
+  .btn-sakit { background:#ef4444; color:#fff; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  @media(max-width:600px){ .form-row{grid-template-columns:1fr;} }
+  label { font-size:.8rem; font-weight:700; color:#475569; display:block; margin-bottom:4px; }
+  input, select, textarea { width:100%; padding:9px 11px; border:1px solid #e2e8f0; border-radius:8px; font-size:.88rem; font-family:inherit; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:#0ea5e9; }
+  .hidden { display:none; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:12px 20px; border-radius:10px; font-size:.88rem; font-weight:600; z-index:999; display:none; }
+  .toast.show { display:block; }
+  .footer { text-align:center; padding:20px; color:#94a3b8; font-size:.8rem; border-top:1px solid #e2e8f0; }
+  .gps-box { background:#ecfdf5; border:1px solid #bbf7d0; border-radius:12px; padding:14px; margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+  .gps-box b { color:#166534; }
+  .notif-box { background:#fef3c7; border:1px solid #fde68a; border-radius:12px; padding:14px; margin-bottom:16px; }
+  .notif-box b { color:#92400e; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="font-size:26px;">🎓</div>
+  <div>
+    <h1>SMKN 2 Rantau</h1>
+    <div class="sub">Sistem Informasi Tata Usaha</div>
+  </div>
+  <div style="margin-left:auto; text-align:right; font-size:.8rem; opacity:.95;">
+    <div>👤 <span id="user-nama">...</span> • <span id="user-role" style="text-transform:uppercase;font-size:.7rem;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;"></span></div>
+    <div id="today-date"></div>
+    <button onclick="logout()" style="margin-top:6px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:999px;font-size:.75rem;cursor:pointer;">Keluar</button>
+  </div>
+</div>
+<nav>
+  <a href="#" class="active" onclick="show('dashboard')">🏠 Dashboard</a>
+  <a href="#" onclick="show('surat-masuk')">📥 Surat Masuk</a>
+  <a href="#" onclick="show('surat-keluar')">📤 Surat Keluar</a>
+  <a href="#" onclick="show('absensi')">✅ Absensi</a>
+  <a href="#" onclick="show('pegawai')">👥 Kepegawaian</a>
+  <a href="#" onclick="show('rekap')">📊 Rekap</a>
+  <a href="#" onclick="show('laporan')">📝 Laporan Bulanan</a>
+  <a href="#" id="nav-log" onclick="show('log')">🧾 Log Aktivitas</a>
+  <a href="#" id="nav-profil" onclick="show('profil')">👤 Profil</a>
+</nav>
+
+<div class="container">
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div id="notif-wrap"></div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-icon blue">📥</div><div class="stat-info"><b id="stat-sm">0</b><span>Surat Masuk</span></div></div>
+    <div class="stat-card"><div class="stat-icon green">📤</div><div class="stat-info"><b id="stat-sk">0</b><span>Surat Keluar</span></div></div>
+    <div class="stat-card"><div class="stat-icon amber">⏰</div><div class="stat-info"><b id="stat-telat">0</b><span>Telat Hari Ini</span></div></div>
+    <div class="stat-card"><div class="stat-icon rose">📋</div><div class="stat-info"><b id="stat-hadir">0</b><span>Hadir Hari Ini</span></div></div>
+  </div>
+  <div class="card" id="dash-kepsek" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;">
+    <h2>🏫 Ringkasan buat Kepala Sekolah</h2>
+    <p class="sub">Gambaran sekolah hari ini — tanpa perlu buka menu lain.</p>
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat-card"><div class="stat-icon blue">👥</div><div class="stat-info"><b id="kp-guru">0</b><span>Total Guru & Staff</span></div></div>
+      <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><b id="kp-hadir">0</b><span>Hadir Hari Ini</span></div></div>
+      <div class="stat-card"><div class="stat-icon amber">⏰</div><div class="stat-info"><b id="kp-telat">0</b><span>Telat Hari Ini</span></div></div>
+      <div class="stat-card"><div class="stat-icon rose">📈</div><div class="stat-info"><b id="kp-persen">0%</b><span>Kehadiran</span></div></div>
+    </div>
+    <div id="kp-notif"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-secondary" onclick="show('rekap')">Lihat Rekap</button>
+      <button class="btn btn-secondary" onclick="show('pegawai')">Data Pegawai</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Aksi Cepat</h2>
+    <p class="sub">Pilih yang mau kamu lakuin</p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn" onclick="show('surat-masuk')">+ Surat Masuk</button>
+      <button class="btn btn-secondary" onclick="show('surat-keluar')">+ Surat Keluar</button>
+      <button class="btn btn-secondary" onclick="show('absensi')">✅ Absensi</button>
+      <button class="btn btn-secondary" onclick="show('pegawai')">👥 Data Pegawai</button>
+    </div>
+  </div>
+</div>
+
+<!-- SURAT MASUK -->
+<div id="surat-masuk" class="hidden">
+  <div class="card">
+    <h2>📥 Surat Masuk</h2>
+    <p class="sub">Semua surat yang datang ke sekolah.</p>
+    <button class="btn" onclick="toggleForm('form-sm')">+ Input Surat Masuk</button>
+    <div id="form-sm" class="hidden" style="margin-top:14px; background:#f0f9ff; padding:16px; border-radius:12px;">
+      <form onsubmit="return submitSM(event)">
+        <div class="form-row"><div><label>Nomor Surat</label><input name="nomor" required></div><div><label>Tanggal</label><input name="tanggal" type="date" required></div></div>
+        <div class="form-row"><div><label>Dari</label><input name="dari" required></div><div><label>Perihal</label><input name="perihal" required></div></div>
+        <div><label>Foto/Scan</label><input name="foto" type="file"></div>
+        <button class="btn" style="margin-top:12px;">Simpan</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Daftar Surat Masuk</h2>
+    <table><tr><th>No.</th><th>Tanggal</th><th>Dari</th><th>Perihal</th><th>Foto</th><th>Aksi</th></tr><tbody id="list-sm"></tbody></table>
+  </div>
+</div>
+
+<!-- SURAT KELUAR -->
+<div id="surat-keluar" class="hidden">
+  <div class="card">
+    <h2>📤 Surat Keluar</h2>
+    <p class="sub">Nomor otomatis sesuai format sekolah.</p>
+    <button class="btn" onclick="toggleForm('form-sk')">+ Buat Surat Keluar</button>
+    <div id="form-sk" class="hidden" style="margin-top:14px; background:#f0f9ff; padding:16px; border-radius:12px;">
+      <form onsubmit="return submitSK(event)">
+        <div class="form-row">
+          <div><label>Jenis</label><select id="jenis-surat" onchange="updateNomor()"><option value="400.3.8">Umum (400.3.8)</option><option value="800.1.11.1">Surat Tugas (800.1.11.1)</option></select></div>
+          <div><label>Nomor Otomatis</label><input id="nomor-otomatis" name="nomor" readonly style="background:#f1f5f9;"></div>
+        </div>
+        <div class="form-row"><div><label>Tanggal</label><input name="tanggal" type="date" required></div><div><label>Tujuan</label><input name="tujuan" required></div></div>
+        <div><label>Perihal</label><input name="perihal" required></div>
+        <div><label>Isi Surat</label><textarea name="isi" rows="3"></textarea></div>
+        <input type="hidden" name="jenis" id="jenis-hidden" value="400.3.8">
+        <button class="btn" style="margin-top:12px;">Simpan</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Daftar Surat Keluar</h2>
+    <table><tr><th>No.</th><th>Tanggal</th><th>Tujuan</th><th>Perihal</th><th>PDF</th><th>Aksi</th></tr><tbody id="list-sk"></tbody></table>
+  </div>
+</div>
+
+<!-- ABSENSI -->
+<div id="absensi" class="hidden">
+  <div class="card">
+    <div class="gps-box"><b>📍 Lokasi: Di Dalam Sekolah ✓</b> <span style="font-size:.8rem; color:#475569; margin-left:8px;">GPS aktif • Radius 100m</span></div>
+    <h2>✅ Absensi — <span id="absen-date"></span></h2>
+    <p class="sub">Batas masuk 07:30. Telat tetap dicatet & masuk laporan.</p>
+    <table><tr><th>Nama</th><th>Status</th><th>Jam</th><th>Aksi</th></tr><tbody id="list-absen"></tbody></table>
+  </div>
+</div>
+
+<!-- PEGAWAI -->
+<div id="pegawai" class="hidden">
+  <div id="notif-pegawai"></div>
+  <div class="card">
+    <h2>👥 Data Kepegawaian</h2>
+    <p class="sub">Biodata lengkap, status & masa jabatan. Notifikasi kenaikan pangkat otomatis.</p>
+    <button class="btn" onclick="toggleForm('form-pg')">+ Tambah Pegawai</button>
+    <div id="form-pg" class="hidden" style="margin-top:14px; background:#f0f9ff; padding:16px; border-radius:12px;">
+      <form onsubmit="return submitPG(event)">
+        <div class="form-row"><div><label>Nama Lengkap</label><input name="nama" required></div><div><label>NIP</label><input name="nip"></div></div>
+        <div class="form-row"><div><label>Tempat Lahir</label><input name="tempat_lahir"></div><div><label>Tanggal Lahir</label><input name="tanggal_lahir" type="date"></div></div>
+        <div class="form-row"><div><label>Golongan</label><input name="golongan" placeholder="III/a"></div><div><label>Jabatan</label><input name="jabatan"></div></div>
+        <div class="form-row"><div><label>Status</label><select name="status"><option>PNS</option><option>PPPK</option><option>Honorer</option></select></div><div><label>Masa Jabatan</label><input name="masa_jabatan" placeholder="2010-2027"></div></div>
+        <div class="form-row"><div><label>Tanggal Naik Pangkat</label><input name="tanggal_naik_pangkat" type="date"></div><div><label>No HP</label><input name="no_hp"></div></div>
+        <div><label>Alamat</label><input name="alamat"></div>
+        <button class="btn" style="margin-top:12px;">Simpan</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Daftar Pegawai</h2>
+    <table><tr><th>Nama</th><th>NIP</th><th>Golongan</th><th>Jabatan</th><th>Status</th><th>Masa Jabatan</th><th>Naik Pangkat</th><th>Aksi</th></tr><tbody id="list-pg"></tbody></table>
+  </div>
+</div>
+
+<!-- REKAP -->
+<div id="rekap" class="hidden">
+  <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+    <button class="btn" id="tab-absen" onclick="switchRekap('absen')">Rekap Absensi</button>
+    <button class="btn btn-secondary" id="tab-surat" onclick="switchRekap('surat')">Rekap Surat</button>
+    <button class="btn btn-secondary" id="tab-pegawai" onclick="switchRekap('pegawai')">Rekap Pegawai</button>
+  </div>
+
+  <div id="rekap-absen">
+    <div class="card">
+      <h2>Rekap Absensi Bulanan</h2>
+      <p class="sub">Pilih bulan buat lihat rekap absensi + keterlambatan.</p>
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <input type="month" id="bulan" style="width:180px;" onchange="loadRekap()">
+        <button class="btn" onclick="exportExcel()">Export Excel</button>
+      </div>
+      <table><tr><th>Nama</th><th>Hadir</th><th>Telat</th><th>Total Menit Telat</th><th>Izin</th><th>Sakit</th></tr><tbody id="list-rekap"></tbody></table>
+    </div>
+  </div>
+
+  <div id="rekap-surat" class="hidden">
+    <div class="card">
+      <h2>Rekap Surat Bulanan</h2>
+      <p class="sub">Ringkasan surat masuk & keluar per bulan.</p>
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <input type="month" id="bulan-surat" style="width:180px;" onchange="loadRekapSurat()">
+        <button class="btn" onclick="exportSuratExcel()">Export Excel</button>
+      </div>
+      <div class="stat-grid" style="margin-bottom:16px;">
+        <div class="stat-card"><div class="stat-icon blue">SM</div><div class="stat-info"><b id="rk-sm-total">0</b><span>Surat Masuk</span></div></div>
+        <div class="stat-card"><div class="stat-icon green">SK</div><div class="stat-info"><b id="rk-sk-total">0</b><span>Surat Keluar</span></div></div>
+      </div>
+      <h3 style="font-size:.95rem; margin:14px 0 8px;">Surat Masuk - Per Asal</h3>
+      <table><tr><th>Dari</th><th>Jumlah</th><th>Perihal Terakhir</th></tr><tbody id="list-rk-sm"></tbody></table>
+      <h3 style="font-size:.95rem; margin:18px 0 8px;">Surat Keluar - Per Tujuan</h3>
+      <table><tr><th>Tujuan</th><th>Jumlah</th><th>Perihal Terakhir</th></tr><tbody id="list-rk-sk"></tbody></table>
+    </div>
+  </div>
+
+  <div id="rekap-pegawai" class="hidden">
+    <div class="card">
+      <h2>Rekap Kepegawaian</h2>
+      <p class="sub">Ringkasan data pegawai sekolah.</p>
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <button class="btn" onclick="exportPegawaiExcel()">Export Excel</button>
+        <button class="btn btn-secondary" onclick="loadRekapPegawai()">Refresh</button>
+      </div>
+      <div class="stat-grid" style="margin-bottom:16px;">
+        <div class="stat-card"><div class="stat-icon blue">PG</div><div class="stat-info"><b id="rk-pg-total">0</b><span>Total Pegawai</span></div></div>
+        <div class="stat-card"><div class="stat-icon green">PNS</div><div class="stat-info"><b id="rk-pg-pns">0</b><span>PNS</span></div></div>
+        <div class="stat-card"><div class="stat-icon amber">PPPK</div><div class="stat-info"><b id="rk-pg-pppk">0</b><span>PPPK</span></div></div>
+        <div class="stat-card"><div class="stat-icon rose">HN</div><div class="stat-info"><b id="rk-pg-honorer">0</b><span>Honorer</span></div></div>
+      </div>
+      <h3 style="font-size:.95rem; margin:14px 0 8px;">Per Golongan</h3>
+      <table><tr><th>Golongan</th><th>Jumlah</th></tr><tbody id="list-rk-gol"></tbody></table>
+      <h3 style="font-size:.95rem; margin:18px 0 8px;">Per Jabatan</h3>
+      <table><tr><th>Jabatan</th><th>Jumlah</th></tr><tbody id="list-rk-jab"></tbody></table>
+      <h3 style="font-size:.95rem; margin:18px 0 8px;">Semua Pegawai</h3>
+      <table><tr><th>Nama</th><th>NIP</th><th>Golongan</th><th>Jabatan</th><th>Status</th><th>Masa Jabatan</th><th>Naik Pangkat</th></tr><tbody id="list-rk-pg"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- LAPORAN -->
+<div id="laporan" class="hidden">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h2>📝 Laporan Bulanan Staff TU</h2>
+        <p class="sub">Setiap staff upload laporan per bulan, per divisi. Kasubag monitoring & menilai.</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="month" id="bulan-lap" style="width:170px;" onchange="loadLaporan()">
+        <button class="btn" onclick="toggleForm('form-lap')">+ Upload Laporan</button>
+      </div>
+    </div>
+    <div id="form-lap" class="hidden" style="margin-top:14px; background:#f0f9ff; padding:16px; border-radius:12px;">
+      <form onsubmit="return submitLaporan(event)" enctype="multipart/form-data">
+        <div class="form-row">
+          <div><label>Nama</label><select name="pegawai_id" id="lap-pegawai" required></select></div>
+          <div><label>Divisi</label><select name="divisi" id="lap-divisi" required></select></div>
+        </div>
+        <div style="margin-bottom:10px;"><label>Bulan Laporan</label><input name="bulan" type="month" id="lap-bulan" required></div>
+        <div style="margin-bottom:10px;"><label>Kegiatan Bulan Ini (satu per baris)</label><textarea name="kegiatan" rows="3" required placeholder="Contoh: - Input data siswa baru&#10;- Cetak rapor semester&#10;- Rapat kesiswaan"></textarea></div>
+        <div class="form-row">
+          <div><label>Target</label><input name="target" placeholder="Contoh: 10 kegiatan"></div>
+          <div><label>Realisasi</label><input name="realisasi" placeholder="Contoh: 9 kegiatan"></div>
+        </div>
+        <div style="margin-bottom:10px;"><label>Kendala</label><textarea name="kendala" rows="2" placeholder="Contoh: Data siswa belum lengkap dari wali kelas"></textarea></div>
+        <div style="margin-bottom:10px;"><label>Catatan buat Kasubag</label><textarea name="catatan" rows="2"></textarea></div>
+        <div style="margin-bottom:14px;"><label>Foto Bukti Kegiatan</label><input name="foto" type="file" accept="image/*"></div>
+        <button class="btn" type="submit">Simpan Laporan</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📋 Semua Laporan Bulan Ini</h2>
+    <p class="sub">Kasubag: kasih Nilai + Komentar, lalu Simpan. Staff langsung lihat hasilnya.</p>
+    <table><tr><th>Nama</th><th>Divisi</th><th>Kegiatan</th><th>Target / Realisasi</th><th>Foto</th><th>Status</th><th>Nilai & Komentar</th></tr><tbody id="list-laporan"></tbody></table>
+  </div>
+  <div class="card" id="rekap-lap-card">
+    <h2>📊 Rekap per Divisi</h2>
+    <p class="sub">Berapa laporan masuk per divisi bulan ini.</p>
+    <table><tr><th>Divisi</th><th>Total Laporan</th><th>Sudah Dinilai</th><th>Belum Dinilai</th></tr><tbody id="list-rekap-lap"></tbody></table>
+  </div>
+</div>
+
+<!-- LOG -->
+<div id="log" class="hidden">
+  <div class="card">
+    <h2>🧾 Log Aktivitas</h2>
+    <p class="sub">Siapa menginput / mengubah / menghapus apa, dan kapan.</p>
+    <table><tr><th>Waktu</th><th>User</th><th>Role</th><th>Aksi</th><th>Detail</th></tr><tbody id="list-log"></tbody></table>
+  </div>
+</div>
+
+<!-- PROFIL -->
+<div id="profil" class="hidden">
+  <div class="card" style="max-width:480px;">
+    <h2>👤 Profil Saya</h2>
+    <p class="sub">Ubah password akun kamu di sini.</p>
+    <div style="background:#f0f9ff; border:1px solid #e0f2fe; border-radius:10px; padding:14px; margin-bottom:16px;">
+      <b id="prof-nama">-</b><br><span style="font-size:.82rem;color:#64748b;">Username: <span id="prof-user">-</span> • Role: <span id="prof-role" style="text-transform:uppercase;">-</span></span>
+    </div>
+    <form onsubmit="return gantiPassword(event)">
+      <label>Password Lama</label>
+      <input type="password" name="lama" required style="margin-bottom:12px;">
+      <label>Password Baru (min. 6 karakter)</label>
+      <input type="password" name="baru" required minlength="6" style="margin-bottom:12px;">
+      <label>Konfirmasi Password Baru</label>
+      <input type="password" name="konfirmasi" required style="margin-bottom:16px;">
+      <button class="btn" type="submit">Ganti Password</button>
+    </form>
+  </div>
+  <div class="card" style="max-width:480px;">
+    <h2>💾 Backup Data</h2>
+    <p class="sub">Download semua data sistem (surat, absensi, pegawai) sebagai file cadangan.</p>
+    <button class="btn" onclick="doBackup()">⬇ Download Backup Database</button>
+    <p style="font-size:.8rem; color:#64748b; margin-top:10px;">Lakukan backup berkala (misal tiap minggu) dan simpan di tempat aman.</p>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+<div id="modal-wrap"></div>
+<div class="footer"><p><strong>Sistem TU SMKN 2 Rantau</strong> • Dibuat oleh <strong>Lucas TECH</strong></p></div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/login.html';
+let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+const role = currentUser.role || 'guru';
+function api(path, opts={}) {
+  return fetch(path, { ...opts, headers: { ...(opts.headers||{}), 'x-auth-token': token } });
+}
+function logout(){ api('/api/logout',{method:'POST',headers:{'x-auth-token':token}}).finally(()=>{ localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login.html'; }); }
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+document.getElementById('absen-date').textContent = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+document.getElementById('bulan').value = new Date().toISOString().slice(0,7);
+const bs=document.getElementById('bulan-surat'); if(bs) bs.value=document.getElementById('bulan').value;
+const bl=document.getElementById('bulan-lap'); if(bl) bl.value=document.getElementById('bulan').value;
+
+function show(id) {
+  ['dashboard','surat-masuk','surat-keluar','absensi','pegawai','rekap','laporan','log','profil'].forEach(x => document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  event.target.classList.add('active');
+  if (id==='surat-masuk') loadSM();
+  if (id==='surat-keluar') loadSK();
+  if (id==='absensi') loadAbsen();
+  if (id==='pegawai') { loadPG(); loadNotifikasi(); }
+  if (id==='dashboard') loadStats();
+  if (id==='laporan') { loadDivisi(); loadPegawaiLap(); loadLaporan(); }
+  if (id==='log') loadLog();
+  if (id==='profil') loadProfil();
+}
+function toggleForm(id){ document.getElementById(id).classList.toggle('hidden'); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function updateNomor(){ const j=document.getElementById('jenis-surat').value; document.getElementById('nomor-otomatis').value = j==='800.1.11.1'?'800.1.11.1/013/SMKN2RTU/2026':'400.3.8/046/SMKN2RTU/2026'; document.getElementById('jenis-hidden').value=j; }
+updateNomor();
+
+async function loadStats(){ const [sm,sk,pg,ab] = await Promise.all([api('/api/surat-masuk').then(r=>r.json()), api('/api/surat-keluar').then(r=>r.json()), api('/api/pegawai').then(r=>r.json()), api('/api/absensi?tanggal='+new Date().toISOString().slice(0,10)).then(r=>r.json())]); document.getElementById('stat-sm').textContent=sm.length; document.getElementById('stat-sk').textContent=sk.length; document.getElementById('stat-hadir').textContent=ab.filter(a=>a.status==='Hadir').length; document.getElementById('stat-telat').textContent=ab.filter(a=>a.telat_menit>0).length; const notif=await api('/api/pegawai/notifikasi').then(r=>r.json()); if(notif.length){ document.getElementById('notif-wrap').innerHTML=`<div class="notif-box"><b>🔔 Notifikasi Kenaikan Pangkat:</b><br>${notif.map(n=>`• ${n.nama} — ${n.tanggal_naik_pangkat}`).join('<br>')}</div>`; } }
+async function loadSM(){ const rows=await api('/api/surat-masuk').then(r=>r.json()); document.getElementById('list-sm').innerHTML=rows.map(r=>`<tr><td>${r.nomor}</td><td>${r.tanggal}</td><td>${r.dari}</td><td>${r.perihal}</td><td>${r.foto?'<span class="badge badge-masuk">Ada</span>':'-'}</td><td style="white-space:nowrap;"><button class="btn btn-small" onclick="editSM(${r.id})">Edit</button> <button class="btn btn-small" style="background:#ef4444;" onclick="hapusSM(${r.id})">Hapus</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Belum ada surat masuk</td></tr>'; }
+async function loadSK(){ const rows=await api('/api/surat-keluar').then(r=>r.json()); document.getElementById('list-sk').innerHTML=rows.map(r=>`<tr><td>${r.nomor}</td><td>${r.tanggal}</td><td>${r.tujuan}</td><td>${r.perihal}</td><td><a href="/api/surat-keluar/${r.id}/pdf?token=${token}" class="btn btn-small">PDF</a></td><td style="white-space:nowrap;"><button class="btn btn-small" onclick="editSK(${r.id})">Edit</button> <button class="btn btn-small" style="background:#ef4444;" onclick="hapusSK(${r.id})">Hapus</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#94a3b8;">Belum ada surat keluar</td></tr>'; }
+async function loadAbsen(){ const pg=await api('/api/pegawai').then(r=>r.json()); const ab=await api('/api/absensi?tanggal='+new Date().toISOString().slice(0,10)).then(r=>r.json()); document.getElementById('list-absen').innerHTML=pg.map(p=>{ const a=ab.find(x=>x.nama===p.nama); if(a) return `<tr><td>${p.nama}</td><td><span class="badge ${a.status==='Hadir'?'badge-hadir':a.status==='Izin'?'badge-izin':'badge-sakit'}">${a.status}</span></td><td>${a.jam}${a.telat_menit>0?` (Telat ${a.telat_menit} mnt)`:''}</td><td><span style="color:#94a3b8;font-size:.8rem;">Sudah absen</span></td></tr>`; return `<tr><td>${p.nama}</td><td>-</td><td>-</td><td><div style="display:flex;gap:5px;"><button class="btn btn-small btn-hadir" onclick="doAbsen(${p.id},'Hadir')">Hadir</button><button class="btn btn-small btn-izin" onclick="doAbsen(${p.id},'Izin')">Izin</button><button class="btn btn-small btn-sakit" onclick="doAbsen(${p.id},'Sakit')">Sakit</button></div></td></tr>`; }).join(''); }
+async function loadPG(){ const rows=await api('/api/pegawai').then(r=>r.json()); document.getElementById('list-pg').innerHTML=rows.map(r=>`<tr><td>${r.nama}</td><td>${r.nip||'-'}</td><td>${r.golongan||'-'}</td><td>${r.jabatan||'-'}</td><td>${r.status||'-'}</td><td>${r.masa_jabatan||'-'}</td><td>${r.tanggal_naik_pangkat||'-'}</td><td style="white-space:nowrap;"><button class="btn btn-small" onclick="editPG(${r.id})">Edit</button> <button class="btn btn-small" style="background:#ef4444;" onclick="hapusPG(${r.id})">Hapus</button></td></tr>`).join(''); }
+async function loadNotifikasi(){ const n=await api('/api/pegawai/notifikasi').then(r=>r.json()); document.getElementById('notif-pegawai').innerHTML=n.length?`<div class="notif-box"><b>🔔 Pengingat Kenaikan Pangkat (90 hari ke depan):</b><br>${n.map(x=>`• ${x.nama} — ${x.tanggal_naik_pangkat}`).join('<br>')}</div>`:''; }
+function switchRekap(t){
+  ['absen','surat','pegawai'].forEach(x => {
+    document.getElementById('rekap-'+x).classList.toggle('hidden', x!==t);
+    document.getElementById('tab-'+x).className = x===t ? 'btn' : 'btn btn-secondary';
+  });
+  if (t==='absen') loadRekap();
+  if (t==='surat') loadRekapSurat();
+  if (t==='pegawai') loadRekapPegawai();
+
+  // Dashboard Kepsek
+  try{
+    const pg2 = await api('/api/pegawai').then(r=>r.json()).catch(()=>[]);
+    const ab2 = await api('/api/absensi?tanggal='+new Date().toISOString().slice(0,10)).then(r=>r.json()).catch(()=>[]);
+    const hadir = ab2.filter(a=>a.status==='Hadir').length;
+    const total = pg2.length || 1;
+    const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+    set('kp-guru', pg2.length);
+    set('kp-hadir', hadir);
+    set('kp-telat', ab2.filter(a=>a.telat_menit>0).length);
+    set('kp-persen', Math.round(hadir/total*100)+'%');
+    const kn = document.getElementById('kp-notif');
+    if (kn && notif && notif.length) kn.innerHTML = `<div class="notif-box"><b>Pengingat Kenaikan Pangkat:</b><br>${notif.map(n=>`• ${n.nama} — ${n.tanggal_naik_pangkat}`).join('<br>')}</div>`;
+  }catch(e){}
+}
+async function loadRekapSurat(){
+  const b=document.getElementById('bulan-surat').value || document.getElementById('bulan').value;
+  const d=await api('/api/rekap/surat?bulan='+b).then(r=>r.json());
+  document.getElementById('rk-sm-total').textContent=d.totalMasuk||0;
+  document.getElementById('rk-sk-total').textContent=d.totalKeluar||0;
+  document.getElementById('list-rk-sm').innerHTML=(d.masukRinci||[]).map(r=>`<tr><td>${r.dari}</td><td>${r.total}</td><td>${r.perihal||'-'}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#94a3b8;">Tidak ada surat masuk bulan ini</td></tr>';
+  document.getElementById('list-rk-sk').innerHTML=(d.keluarRinci||[]).map(r=>`<tr><td>${r.tujuan}</td><td>${r.total}</td><td>${r.perihal||'-'}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#94a3b8;">Tidak ada surat keluar bulan ini</td></tr>';
+}
+async function loadRekapPegawai(){
+  const d=await api('/api/rekap/pegawai').then(r=>r.json());
+  document.getElementById('rk-pg-total').textContent=d.total||0;
+  const st={PNS:0,PPPK:0,Honorer:0}; (d.perStatus||[]).forEach(s=>{ if(st[s.status]!==undefined) st[s.status]=s.c; });
+  document.getElementById('rk-pg-pns').textContent=st.PNS;
+  document.getElementById('rk-pg-pppk').textContent=st.PPPK;
+  document.getElementById('rk-pg-honorer').textContent=st.Honorer;
+  document.getElementById('list-rk-gol').innerHTML=(d.perGolongan||[]).map(r=>`<tr><td>${r.golongan}</td><td>${r.c}</td></tr>`).join('')||'<tr><td colspan="2" style="text-align:center;color:#94a3b8;">Belum ada data golongan</td></tr>';
+  document.getElementById('list-rk-jab').innerHTML=(d.perJabatan||[]).map(r=>`<tr><td>${r.jabatan}</td><td>${r.c}</td></tr>`).join('')||'<tr><td colspan="2" style="text-align:center;color:#94a3b8;">Belum ada data jabatan</td></tr>';
+  document.getElementById('list-rk-pg').innerHTML=(d.semua||[]).map(r=>`<tr><td>${r.nama}</td><td>${r.nip||'-'}</td><td>${r.golongan||'-'}</td><td>${r.jabatan||'-'}</td><td>${r.status||'-'}</td><td>${r.masa_jabatan||'-'}</td><td>${r.tanggal_naik_pangkat||'-'}</td></tr>`).join('');
+}
+function exportSuratExcel(){ const b=document.getElementById('bulan-surat').value||document.getElementById('bulan').value; window.open('/api/rekap/surat/excel?bulan='+b+'&token='+token); }
+function exportPegawaiExcel(){ window.open('/api/rekap/pegawai/excel?token='+token); }
+async function loadRekap(){ const b=document.getElementById('bulan').value; const rows=await api('/api/absensi/rekap?bulan='+b).then(r=>r.json()); document.getElementById('list-rekap').innerHTML=rows.map(r=>`<tr><td>${r.nama}</td><td>${r.hadir||0}</td><td>${r.telat||0}</td><td>${r.total_telat||0} mnt</td><td>${r.izin||0}</td><td>${r.sakit||0}</td></tr>`).join(''); }
+async function doAbsen(id,status){ const now=new Date(); const jam=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'); const res=await api('/api/absensi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pegawai_id:id,tanggal:now.toISOString().slice(0,10),jam,status})}).then(r=>r.json()); toast(res.telat?`Hadir • Telat ${res.telat} menit`:`Absensi: ${status} • ${jam}`); loadAbsen(); }
+function exportExcel(){ const b=document.getElementById('bulan').value; window.open('/api/absensi/rekap/excel?bulan='+b); }
+async function submitSM(e){ e.preventDefault(); const fd=new FormData(e.target); await api('/api/surat-masuk',{method:'POST',body:fd}); toast('Surat masuk tersimpan!'); e.target.reset(); loadSM(); return false; }
+async function submitSK(e){ e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); await api('/api/surat-keluar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); toast('Surat keluar tersimpan!'); loadSK(); return false; }
+async function submitPG(e){ e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); await api('/api/pegawai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); toast('Pegawai tersimpan!'); loadPG(); return false; }
+document.getElementById('user-nama').textContent = currentUser.nama || 'User';
+document.getElementById('user-role').textContent = role;
+// Role-based menu visibility
+const canTU = ['admin','kasubag','staff','kepsek'].includes(role);
+const canRekap = ['admin','kasubag','kepsek','staff'].includes(role);
+if (!canTU) {
+  document.querySelectorAll('nav a').forEach(a => {
+    const href = a.getAttribute('onclick') || '';
+    if (href.includes('surat') || href.includes('pegawai')) a.style.display = 'none';
+  });
+}
+if (!canRekap) document.querySelectorAll('nav a').forEach(a => { if ((a.getAttribute('onclick')||'').includes('rekap')) a.style.display='none'; });
+// ===== MODAL EDIT =====
+function showModal(html){
+  document.getElementById('modal-wrap').innerHTML = `<div style="position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeModal()"><div style="background:#fff;border-radius:16px;padding:22px;width:100%;max-width:520px;max-height:90vh;overflow:auto;">${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modal-wrap').innerHTML=''; }
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+// ===== EDIT / HAPUS SURAT MASUK =====
+async function editSM(id){
+  const rows = await api('/api/surat-masuk').then(r=>r.json());
+  const s = rows.find(x=>x.id===id); if(!s) return;
+  showModal(`<h2 style="font-size:1.1rem;margin-bottom:12px;">Edit Surat Masuk</h2>
+  <form onsubmit="return saveSM(event,${id})">
+    <label>Nomor Surat</label><input name="nomor" value="${esc(s.nomor)}" required style="margin-bottom:10px;">
+    <label>Tanggal</label><input name="tanggal" type="date" value="${esc(s.tanggal)}" required style="margin-bottom:10px;">
+    <label>Dari</label><input name="dari" value="${esc(s.dari)}" required style="margin-bottom:10px;">
+    <label>Perihal</label><input name="perihal" value="${esc(s.perihal)}" required style="margin-bottom:14px;">
+    <div style="display:flex;gap:8px;"><button class="btn" type="submit">Simpan</button><button class="btn btn-secondary" type="button" onclick="closeModal()">Batal</button></div>
+  </form>`);
+}
+async function saveSM(e,id){ e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); await api('/api/surat-masuk/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); toast('Surat diperbarui!'); closeModal(); loadSM(); loadStats(); return false; }
+async function hapusSM(id){ if(!confirm('Hapus surat ini? Tindakan ini tidak bisa dibatalkan.')) return; await api('/api/surat-masuk/'+id,{method:'DELETE'}); toast('Surat dihapus.'); loadSM(); loadStats(); }
+
+// ===== EDIT / HAPUS SURAT KELUAR =====
+async function editSK(id){
+  const rows = await api('/api/surat-keluar').then(r=>r.json());
+  const s = rows.find(x=>x.id===id); if(!s) return;
+  showModal(`<h2 style="font-size:1.1rem;margin-bottom:12px;">Edit Surat Keluar</h2>
+  <form onsubmit="return saveSK(event,${id})">
+    <label>Nomor Surat</label><input name="nomor" value="${esc(s.nomor)}" required style="margin-bottom:10px;">
+    <label>Tanggal</label><input name="tanggal" type="date" value="${esc(s.tanggal)}" required style="margin-bottom:10px;">
+    <label>Tujuan</label><input name="tujuan" value="${esc(s.tujuan)}" required style="margin-bottom:10px;">
+    <label>Perihal</label><input name="perihal" value="${esc(s.perihal)}" required style="margin-bottom:10px;">
+    <label>Isi Surat</label><textarea name="isi" rows="3" style="margin-bottom:14px;">${esc(s.isi)}</textarea>
+    <input type="hidden" name="jenis" value="${esc(s.jenis||'400.3.8')}">
+    <div style="display:flex;gap:8px;"><button class="btn" type="submit">Simpan</button><button class="btn btn-secondary" type="button" onclick="closeModal()">Batal</button></div>
+  </form>`);
+}
+async function saveSK(e,id){ e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); await api('/api/surat-keluar/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); toast('Surat diperbarui!'); closeModal(); loadSK(); loadStats(); return false; }
+async function hapusSK(id){ if(!confirm('Hapus surat ini? Tindakan ini tidak bisa dibatalkan.')) return; await api('/api/surat-keluar/'+id,{method:'DELETE'}); toast('Surat dihapus.'); loadSK(); loadStats(); }
+
+// ===== EDIT / HAPUS PEGAWAI =====
+async function editPG(id){
+  const rows = await api('/api/pegawai').then(r=>r.json());
+  const p = rows.find(x=>x.id===id); if(!p) return;
+  showModal(`<h2 style="font-size:1.1rem;margin-bottom:12px;">Edit Pegawai</h2>
+  <form onsubmit="return savePG(event,${id})">
+    <div class="form-row"><div><label>Nama</label><input name="nama" value="${esc(p.nama)}" required></div><div><label>NIP</label><input name="nip" value="${esc(p.nip)}"></div></div>
+    <div class="form-row"><div><label>Tempat Lahir</label><input name="tempat_lahir" value="${esc(p.tempat_lahir)}"></div><div><label>Tgl Lahir</label><input name="tanggal_lahir" type="date" value="${esc(p.tanggal_lahir)}"></div></div>
+    <div class="form-row"><div><label>Golongan</label><input name="golongan" value="${esc(p.golongan)}"></div><div><label>Jabatan</label><input name="jabatan" value="${esc(p.jabatan)}"></div></div>
+    <div class="form-row"><div><label>Status</label><select name="status"><option ${p.status==='PNS'?'selected':''}>PNS</option><option ${p.status==='PPPK'?'selected':''}>PPPK</option><option ${p.status==='Honorer'?'selected':''}>Honorer</option></select></div><div><label>Masa Jabatan</label><input name="masa_jabatan" value="${esc(p.masa_jabatan)}"></div></div>
+    <div class="form-row"><div><label>Naik Pangkat</label><input name="tanggal_naik_pangkat" type="date" value="${esc(p.tanggal_naik_pangkat)}"></div><div><label>No HP</label><input name="no_hp" value="${esc(p.no_hp)}"></div></div>
+    <div style="margin-bottom:14px;"><label>Alamat</label><input name="alamat" value="${esc(p.alamat)}"></div>
+    <div style="display:flex;gap:8px;"><button class="btn" type="submit">Simpan</button><button class="btn btn-secondary" type="button" onclick="closeModal()">Batal</button></div>
+  </form>`);
+}
+async function savePG(e,id){ e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); await api('/api/pegawai/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); toast('Pegawai diperbarui!'); closeModal(); loadPG(); loadNotifikasi(); return false; }
+async function hapusPG(id){ if(!confirm('Hapus pegawai ini? Absensi dia juga ikut terhapus.')) return; await api('/api/pegawai/'+id,{method:'DELETE'}); toast('Pegawai dihapus.'); loadPG(); loadNotifikasi(); }
+
+// ===== LOG =====
+async function loadLog(){
+  const rows = await api('/api/log').then(r=>r.json()).catch(()=>[]);
+  document.getElementById('list-log').innerHTML = rows.map(r=>`<tr><td style="white-space:nowrap;">${r.created_at}</td><td>${esc(r.nama||r.username)}</td><td>${esc(r.role)}</td><td><b>${esc(r.aksi)}</b></td><td>${esc(r.detail)}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Belum ada aktivitas</td></tr>';
+}
+
+// ===== PROFIL & BACKUP =====
+function loadProfil(){
+  document.getElementById('prof-nama').textContent = currentUser.nama || '-';
+  document.getElementById('prof-user').textContent = currentUser.username || '-';
+  document.getElementById('prof-role').textContent = role;
+}
+async function gantiPassword(e){
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  if (fd.get('baru') !== fd.get('konfirmasi')) { toast('Konfirmasi password tidak sama!'); return false; }
+  const res = await api('/api/ganti-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lama:fd.get('lama'), baru:fd.get('baru')})}).then(r=>r.json());
+  if (res.ok) { toast('Password berhasil diganti!'); e.target.reset(); }
+  else toast(res.error || 'Gagal ganti password');
+  return false;
+}
+function doBackup(){ window.open('/api/backup?token='+token); toast('Backup mulai diunduh...'); }
+
+// ===== GPS di Absensi =====
+function getPos(){
+  return new Promise((resolve)=>{
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000 }
+    );
+  });
+}
+// override doAbsen lama biar kirim GPS
+const _doAbsenLama = doAbsen;
+doAbsen = async function(id, status){
+  const now = new Date();
+  const jam = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const pos = await getPos();
+  const res = await api('/api/absensi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pegawai_id:id,tanggal:now.toISOString().slice(0,10),jam,status,lat:pos?pos.lat:null,lng:pos?pos.lng:null})}).then(r=>r.json());
+  if (res.ok) toast(res.telat ? `Hadir • Telat ${res.telat} menit` : `Absensi: ${status} • ${jam}`);
+  else toast(res.error || 'Gagal absen');
+  loadAbsen();
+};
+
+// ===== LAPORAN BULANAN =====
+let divisiList = [];
+async function loadDivisi(){
+  divisiList = await api('/api/divisi').then(r=>r.json()).catch(()=>[]);
+  document.getElementById('lap-divisi').innerHTML = divisiList.map(d=>`<option>${d}</option>`).join('');
+}
+async function loadPegawaiLap(){
+  const pg = await api('/api/pegawai').then(r=>r.json()).catch(()=>[]);
+  const sel = document.getElementById('lap-pegawai');
+  let list = pg;
+  if (currentUser.pegawai_id) list = pg.filter(p=>p.id===currentUser.pegawai_id);
+  sel.innerHTML = list.map(p=>`<option value="${p.id}">${p.nama}</option>`).join('');
+  document.getElementById('lap-bulan').value = document.getElementById('bulan-lap').value || new Date().toISOString().slice(0,7);
+}
+async function loadLaporan(){
+  const b = document.getElementById('bulan-lap').value || new Date().toISOString().slice(0,7);
+  const rows = await api('/api/laporan?bulan='+b).then(r=>r.json()).catch(()=>[]);
+  const canNilai = ['admin','kasubag'].includes(role);
+  document.getElementById('list-laporan').innerHTML = rows.map(r=>{
+    const nilaiBox = canNilai
+      ? `<div style="display:flex;flex-direction:column;gap:4px;min-width:150px;">
+           <input value="${esc(r.nilai||'')}" placeholder="Nilai (A/B/C)" id="nilai-${r.id}" style="padding:6px 8px;font-size:.82rem;">
+           <input value="${esc(r.komentar_kasubag||'')}" placeholder="Komentar" id="kom-${r.id}" style="padding:6px 8px;font-size:.82rem;">
+           <button class="btn btn-small" onclick="simpanNilai(${r.id})">Simpan Nilai</button>
+         </div>`
+      : `<div style="font-size:.82rem;"><b>Nilai:</b> ${esc(r.nilai||'-')}<br><b>Komentar:</b> ${esc(r.komentar_kasubag||'-')}</div>`;
+    return `<tr>
+      <td><b>${esc(r.nama)}</b></td>
+      <td>${esc(r.divisi)}</td>
+      <td style="white-space:pre-line;font-size:.82rem;">${esc(r.kegiatan)}</td>
+      <td style="font-size:.82rem;">Target: ${esc(r.target||'-')}<br>Realisasi: ${esc(r.realisasi||'-')}${r.kendala?`<br><span style="color:#b45309;">Kendala: ${esc(r.kendala)}</span>`:''}</td>
+      <td>${r.foto?`<a href="/uploads/${r.foto}" target="_blank" class="btn btn-small">Lihat</a>`:'-'}</td>
+      <td><span class="badge ${r.status==='Sudah Dinilai'?'badge-hadir':'badge-izin'}">${esc(r.status)}</span></td>
+      <td>${nilaiBox}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#94a3b8;">Belum ada laporan bulan ini</td></tr>';
+  // Rekap divisi
+  const rk = await api('/api/laporan/rekap?bulan='+b).then(r=>r.json()).catch(()=>({rekapDivisi:[]}));
+  document.getElementById('list-rekap-lap').innerHTML = (rk.rekapDivisi||[]).map(d=>`<tr><td>${esc(d.divisi)}</td><td>${d.total_laporan}</td><td>${d.sudah_dinilai}</td><td>${d.belum_dinilai}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8;">Belum ada data</td></tr>';
+}
+async function submitLaporan(e){
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await api('/api/laporan',{method:'POST',body:fd}).then(r=>r.json());
+  if (res.ok) { toast('Laporan tersimpan!'); e.target.reset(); toggleForm('form-lap'); loadLaporan(); }
+  else toast(res.error || 'Gagal simpan');
+  return false;
+}
+async function simpanNilai(id){
+  const nilai = document.getElementById('nilai-'+id).value;
+  const komentar_kasubag = document.getElementById('kom-'+id).value;
+  const res = await api('/api/laporan/'+id+'/nilai',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nilai, komentar_kasubag})}).then(r=>r.json());
+  if (res.ok) { toast('Nilai tersimpan!'); loadLaporan(); }
+  else toast(res.error || 'Gagal simpan');
+}
+
+loadStats();
+</script>
+</body>
+</html>
