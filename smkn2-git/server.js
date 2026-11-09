@@ -50,7 +50,9 @@ CREATE TABLE IF NOT EXISTS pegawai (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nama TEXT, nip TEXT, tempat_lahir TEXT, tanggal_lahir TEXT,
   golongan TEXT, jabatan TEXT, status TEXT, masa_jabatan TEXT,
-  tanggal_naik_pangkat TEXT, no_hp TEXT, alamat TEXT
+  tanggal_naik_pangkat TEXT, no_hp TEXT, alamat TEXT,
+  jenis_pegawai TEXT DEFAULT 'PNS', tanggal_mulai TEXT, tanggal_pangkat_terakhir TEXT,
+  jenis_kelamin TEXT, agama TEXT, pendidikan TEXT, periode_tahun TEXT, periode_bulan TEXT
 );
 CREATE TABLE IF NOT EXISTS absensi (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +80,18 @@ CREATE TABLE IF NOT EXISTS activity_log (
 const absCols = db.prepare("PRAGMA table_info(absensi)").all().map(c => c.name);
 if (!absCols.includes('lat')) db.exec("ALTER TABLE absensi ADD COLUMN lat REAL");
 if (!absCols.includes('lng')) db.exec("ALTER TABLE absensi ADD COLUMN lng REAL");
+if (!absCols.includes('keterangan')) db.exec("ALTER TABLE absensi ADD COLUMN keterangan TEXT");
+const lapCols = db.prepare("PRAGMA table_info(laporan_bulanan)").all().map(c => c.name);
+if (!lapCols.includes('file_laporan')) db.exec("ALTER TABLE laporan_bulanan ADD COLUMN file_laporan TEXT");
+const pgCols = db.prepare("PRAGMA table_info(pegawai)").all().map(c => c.name);
+if (!pgCols.includes('jenis_pegawai')) db.exec("ALTER TABLE pegawai ADD COLUMN jenis_pegawai TEXT DEFAULT 'PNS'");
+if (!pgCols.includes('tanggal_mulai')) db.exec("ALTER TABLE pegawai ADD COLUMN tanggal_mulai TEXT");
+if (!pgCols.includes('tanggal_pangkat_terakhir')) db.exec("ALTER TABLE pegawai ADD COLUMN tanggal_pangkat_terakhir TEXT");
+if (!pgCols.includes('jenis_kelamin')) db.exec("ALTER TABLE pegawai ADD COLUMN jenis_kelamin TEXT");
+if (!pgCols.includes('agama')) db.exec("ALTER TABLE pegawai ADD COLUMN agama TEXT");
+if (!pgCols.includes('pendidikan')) db.exec("ALTER TABLE pegawai ADD COLUMN pendidikan TEXT");
+if (!pgCols.includes('periode_tahun')) db.exec("ALTER TABLE pegawai ADD COLUMN periode_tahun TEXT");
+if (!pgCols.includes('periode_bulan')) db.exec("ALTER TABLE pegawai ADD COLUMN periode_bulan TEXT");
 
 // Helpers
 function hashPass(pw) {
@@ -246,15 +260,17 @@ app.get('/api/pegawai', requireAuth, (req, res) => {
 });
 app.post('/api/pegawai', requireRole('admin','kasubag'), (req, res) => {
   const p = req.body;
-  const info = db.prepare(`INSERT INTO pegawai (nama,nip,tempat_lahir,tanggal_lahir,golongan,jabatan,status,masa_jabatan,tanggal_naik_pangkat,no_hp,alamat)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(p.nama,p.nip,p.tempat_lahir,p.tanggal_lahir,p.golongan,p.jabatan,p.status,p.masa_jabatan,p.tanggal_naik_pangkat,p.no_hp,p.alamat);
+  const isPJLP = (p.jenis_pegawai === 'PJLP' || p.status === 'PJLP');
+  const info = db.prepare(`INSERT INTO pegawai (nama,nip,tempat_lahir,tanggal_lahir,golongan,jabatan,status,masa_jabatan,tanggal_naik_pangkat,no_hp,alamat,jenis_pegawai,tanggal_mulai,tanggal_pangkat_terakhir,jenis_kelamin,agama,pendidikan,periode_tahun,periode_bulan)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(p.nama, isPJLP ? null : p.nip, p.tempat_lahir, p.tanggal_lahir, isPJLP ? null : p.golongan, p.jabatan, p.status, p.masa_jabatan, isPJLP ? null : p.tanggal_naik_pangkat, p.no_hp, p.alamat, p.jenis_pegawai || 'PNS', p.tanggal_mulai || null, p.tanggal_pangkat_terakhir || null, p.jenis_kelamin || null, p.agama || null, p.pendidikan || null, p.periode_tahun || null, p.periode_bulan || null);
   log(req.user, 'Pegawai', `Tambah pegawai ${p.nama}`);
   res.json({ ok: true, id: info.lastInsertRowid });
 });
 app.put('/api/pegawai/:id', requireRole('admin','kasubag'), (req, res) => {
   const p = req.body;
-  db.prepare(`UPDATE pegawai SET nama=?,nip=?,tempat_lahir=?,tanggal_lahir=?,golongan=?,jabatan=?,status=?,masa_jabatan=?,tanggal_naik_pangkat=?,no_hp=?,alamat=? WHERE id=?`)
-    .run(p.nama,p.nip,p.tempat_lahir,p.tanggal_lahir,p.golongan,p.jabatan,p.status,p.masa_jabatan,p.tanggal_naik_pangkat,p.no_hp,p.alamat, req.params.id);
+  const isPJLP = (p.jenis_pegawai === 'PJLP' || p.status === 'PJLP');
+  db.prepare(`UPDATE pegawai SET nama=?,nip=?,tempat_lahir=?,tanggal_lahir=?,golongan=?,jabatan=?,status=?,masa_jabatan=?,tanggal_naik_pangkat=?,no_hp=?,alamat=?,jenis_pegawai=?,tanggal_mulai=?,tanggal_pangkat_terakhir=?,jenis_kelamin=?,agama=?,pendidikan=?,periode_tahun=?,periode_bulan=? WHERE id=?`)
+    .run(p.nama, isPJLP ? null : p.nip, p.tempat_lahir, p.tanggal_lahir, isPJLP ? null : p.golongan, p.jabatan, p.status, p.masa_jabatan, isPJLP ? null : p.tanggal_naik_pangkat, p.no_hp, p.alamat, p.jenis_pegawai || 'PNS', p.tanggal_mulai || null, p.tanggal_pangkat_terakhir || null, p.jenis_kelamin || null, p.agama || null, p.pendidikan || null, p.periode_tahun || null, p.periode_bulan || null, req.params.id);
   log(req.user, 'Pegawai', `Edit pegawai ${p.nama}`);
   res.json({ ok: true });
 });
@@ -266,13 +282,28 @@ app.delete('/api/pegawai/:id', requireRole('admin','kasubag'), (req, res) => {
   res.json({ ok: true });
 });
 app.get('/api/pegawai/notifikasi', requireRole('admin','kasubag','kepsek'), (req, res) => {
-  const rows = db.prepare("SELECT * FROM pegawai WHERE tanggal_naik_pangkat IS NOT NULL AND tanggal_naik_pangkat != ''").all();
+  const rows = db.prepare("SELECT * FROM pegawai WHERE jenis_pegawai != 'PJLP' AND status != 'PJLP'").all();
   const today = new Date();
-  const notifs = rows.filter(r => {
-    const target = new Date(r.tanggal_naik_pangkat);
-    const diff = (target - today) / (1000*60*60*24);
-    return diff >= 0 && diff <= 90;
+  const notifs = [];
+  rows.forEach(r => {
+    // Prioritas: periode jabatan (tahun+bulan) -> pangkat terakhir -> naik pangkat lama -> tanggal mulai
+    let last = null;
+    if (r.periode_tahun && r.periode_bulan) {
+      last = new Date(Number(r.periode_tahun), Number(r.periode_bulan) - 1, 1);
+    } else {
+      let lastStr = r.tanggal_pangkat_terakhir || r.tanggal_naik_pangkat || r.tanggal_mulai;
+      if (!lastStr) return;
+      last = new Date(lastStr);
+    }
+    if (isNaN(last)) return;
+    // Kenaikan pangkat tiap 4 tahun dari periode jabatan
+    const next = new Date(last); next.setFullYear(next.getFullYear() + 4);
+    const diff = Math.floor((next - today) / (1000*60*60*24));
+    if (diff >= 0 && diff <= 150) {
+      notifs.push({ ...r, tanggal_naik_berikutnya: next.toISOString().slice(0,10), sisa_hari: diff, reminder_terakhir: diff % 30 === 0 ? 'Hari ini' : 'dalam ' + (diff % 30) + ' hari lagi' });
+    }
   });
+  notifs.sort((a,b) => a.sisa_hari - b.sisa_hari);
   res.json(notifs);
 });
 
@@ -280,14 +311,20 @@ app.get('/api/pegawai/notifikasi', requireRole('admin','kasubag','kepsek'), (req
 app.get('/api/absensi', requireAuth, (req, res) => {
   const { tanggal } = req.query;
   const rows = db.prepare(`
-    SELECT p.nama, a.jam, a.status, a.telat_menit FROM absensi a
+    SELECT p.nama, a.jam, a.status, a.telat_menit, a.keterangan FROM absensi a
     JOIN pegawai p ON p.id = a.pegawai_id
     WHERE a.tanggal = ? ORDER BY p.nama
   `).all(tanggal || new Date().toISOString().slice(0,10));
   res.json(rows);
 });
 app.post('/api/absensi', requireAuth, (req, res) => {
-  const { pegawai_id, tanggal, jam, status, lat, lng } = req.body;
+  const { pegawai_id, tanggal, jam, status, lat, lng, keterangan } = req.body;
+  if ((status === 'Izin' || status === 'Sakit') && (!keterangan || !keterangan.trim())) {
+    return res.status(400).json({ error: 'Keterangan wajib diisi untuk Izin/Sakit' });
+  }
+  if (status === 'Hadir' && (lat == null || lng == null)) {
+    return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk absen Hadir. Izinkan akses lokasi di browser.' });
+  }
   if (req.user.role === 'guru' && req.user.pegawai_id !== Number(pegawai_id)) {
     return res.status(403).json({ error: 'Guru hanya bisa absen untuk diri sendiri' });
   }
@@ -300,8 +337,8 @@ app.post('/api/absensi', requireAuth, (req, res) => {
   }
   const existing = db.prepare('SELECT id FROM absensi WHERE pegawai_id=? AND tanggal=?').get(pegawai_id, tanggal);
   if (existing) return res.status(400).json({ error: 'Sudah absen hari ini' });
-  db.prepare('INSERT INTO absensi (pegawai_id,tanggal,jam,status,telat_menit,lat,lng) VALUES (?,?,?,?,?,?,?)')
-    .run(pegawai_id,tanggal,jam,status,telat, lat || null, lng || null);
+  db.prepare('INSERT INTO absensi (pegawai_id,tanggal,jam,status,telat_menit,lat,lng,keterangan) VALUES (?,?,?,?,?,?,?,?)')
+    .run(pegawai_id,tanggal,jam,status,telat, lat || null, lng || null, keterangan || null);
   log(req.user, 'Absensi', `Absensi ${status} jam ${jam}${telat ? ' (telat '+telat+' mnt)' : ''}`);
   res.json({ ok: true, telat });
 });
@@ -377,27 +414,61 @@ app.get('/api/rekap/surat/excel', requireRole('admin','kasubag','kepsek','staff'
 // ========== REKAP PEGAWAI ==========
 app.get('/api/rekap/pegawai', requireRole('admin','kasubag','kepsek','staff'), (req, res) => {
   const total = db.prepare('SELECT COUNT(*) as c FROM pegawai').get();
-  const perStatus = db.prepare('SELECT status, COUNT(*) as c FROM pegawai GROUP BY status').all();
+  const perStatus = db.prepare('SELECT COALESCE(NULLIF(jenis_pegawai,""), status) as status, COUNT(*) as c FROM pegawai GROUP BY status').all();
   const perGolongan = db.prepare('SELECT golongan, COUNT(*) as c FROM pegawai WHERE golongan IS NOT NULL AND length(golongan) > 0 GROUP BY golongan ORDER BY golongan').all();
   const perJabatan = db.prepare('SELECT jabatan, COUNT(*) as c FROM pegawai WHERE jabatan IS NOT NULL AND length(jabatan) > 0 GROUP BY jabatan ORDER BY c DESC').all();
-  const semua = db.prepare('SELECT id, nama, nip, golongan, jabatan, status, masa_jabatan, tanggal_naik_pangkat FROM pegawai ORDER BY nama').all();
+  const semua = db.prepare('SELECT id, nama, jenis_kelamin, nip, tempat_lahir, tanggal_lahir, golongan, jabatan, COALESCE(NULLIF(jenis_pegawai,""), status) as jenis, agama, pendidikan, no_hp, alamat, periode_tahun, periode_bulan, tanggal_naik_pangkat FROM pegawai ORDER BY nama').all();
   res.json({ total: total.c, perStatus, perGolongan, perJabatan, semua });
 });
 app.get('/api/rekap/pegawai/excel', requireRole('admin','kasubag','kepsek','staff'), async (req, res) => {
-  const rows = db.prepare('SELECT nama, nip, tempat_lahir, tanggal_lahir, golongan, jabatan, status, masa_jabatan, tanggal_naik_pangkat, no_hp, alamat FROM pegawai ORDER BY nama').all();
+  const rows = db.prepare('SELECT nama, jenis_kelamin, tempat_lahir, tanggal_lahir, nip, COALESCE(NULLIF(jenis_pegawai,""), status) as status, jabatan, agama, pendidikan, no_hp, alamat, golongan, periode_tahun, periode_bulan, tanggal_naik_pangkat FROM pegawai ORDER BY nama').all();
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Pegawai');
   ws.columns = [
-    { header:'Nama', key:'nama' }, { header:'NIP', key:'nip' }, { header:'Tempat Lahir', key:'tempat_lahir' },
-    { header:'Tanggal Lahir', key:'tanggal_lahir' }, { header:'Golongan', key:'golongan' }, { header:'Jabatan', key:'jabatan' },
-    { header:'Status', key:'status' }, { header:'Masa Jabatan', key:'masa_jabatan' },
-    { header:'Naik Pangkat', key:'tanggal_naik_pangkat' }, { header:'No HP', key:'no_hp' }, { header:'Alamat', key:'alamat' }
+    { header:'Nama', key:'nama' }, { header:'Jenis Kelamin', key:'jenis_kelamin' },
+    { header:'Tempat Lahir', key:'tempat_lahir' }, { header:'Tanggal Lahir', key:'tanggal_lahir' },
+    { header:'NIP', key:'nip' }, { header:'Status Kepegawaian', key:'status' },
+    { header:'Jabatan', key:'jabatan' }, { header:'Agama', key:'agama' },
+    { header:'Pendidikan Terakhir', key:'pendidikan' }, { header:'No HP', key:'no_hp' },
+    { header:'Alamat', key:'alamat' }, { header:'Golongan', key:'golongan' },
+    { header:'Periode Tahun', key:'periode_tahun' }, { header:'Periode Bulan', key:'periode_bulan' },
+    { header:'Naik Pangkat', key:'tanggal_naik_pangkat' }
   ];
   rows.forEach(r => ws.addRow(r));
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename=rekap-pegawai.xlsx');
   await wb.xlsx.write(res);
   res.end();
+});
+
+// ========== USERS (buat akun guru/staff) ==========
+app.get('/api/users', requireRole('admin','kasubag'), (req, res) => {
+  const rows = db.prepare('SELECT id, username, nama, role, pegawai_id FROM users ORDER BY role, nama').all();
+  res.json(rows);
+});
+app.post('/api/users', requireRole('admin','kasubag'), (req, res) => {
+  const { username, password, nama, role, pegawai_id } = req.body;
+  if (!username || !password || password.length < 6) return res.status(400).json({ error: 'Username & password (min 6) wajib diisi' });
+  const exists = db.prepare('SELECT id FROM users WHERE username=?').get(username);
+  if (exists) return res.status(400).json({ error: 'Username sudah dipakai' });
+  db.prepare('INSERT INTO users (username,password_hash,nama,role,pegawai_id) VALUES (?,?,?,?,?)')
+    .run(username, hashPass(password), nama || username, role || 'guru', pegawai_id || null);
+  log(req.user, 'User', `Buat akun ${username} (${role})`);
+  res.json({ ok: true });
+});
+app.put('/api/users/:id/reset-password', requireRole('admin','kasubag'), (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Password minimal 6 karakter' });
+  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hashPass(password), req.params.id);
+  log(req.user, 'User', `Reset password user id ${req.params.id}`);
+  res.json({ ok: true });
+});
+app.delete('/api/users/:id', requireRole('admin','kasubag'), (req, res) => {
+  if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'Tidak bisa hapus akun sendiri' });
+  db.prepare('DELETE FROM sessions WHERE user_id=?').run(req.params.id);
+  db.prepare('DELETE FROM users WHERE id=?').run(req.params.id);
+  log(req.user, 'User', `Hapus akun id ${req.params.id}`);
+  res.json({ ok: true });
 });
 
 // ========== LAPORAN BULANAN ==========
@@ -413,20 +484,21 @@ app.get('/api/laporan', requireAuth, (req, res) => {
   }
   res.json(rows);
 });
-app.post('/api/laporan', requireAuth, upload.single('foto'), (req, res) => {
+app.post('/api/laporan', requireAuth, upload.fields([{name:'foto',maxCount:1},{name:'file_laporan',maxCount:1}]), (req, res) => {
   const { pegawai_id, divisi, bulan, kegiatan, target, realisasi, kendala, catatan } = req.body;
   if (req.user.role !== 'admin' && req.user.role !== 'kasubag' && req.user.pegawai_id !== Number(pegawai_id)) {
     return res.status(403).json({ error: 'Hanya bisa upload laporan sendiri' });
   }
-  const foto = req.file ? req.file.filename : null;
+  const foto = req.files && req.files.foto ? req.files.foto[0].filename : null;
+  const file_laporan = req.files && req.files.file_laporan ? req.files.file_laporan[0].filename : null;
   const existing = db.prepare('SELECT id FROM laporan_bulanan WHERE pegawai_id=? AND bulan=?').get(pegawai_id, bulan);
   if (existing) {
-    db.prepare('UPDATE laporan_bulanan SET divisi=?, kegiatan=?, target=?, realisasi=?, kendala=?, catatan=?, foto=IFNULL(?,foto), status=? WHERE id=?')
-      .run(divisi, kegiatan, target, realisasi, kendala, catatan, foto, 'Belum Dinilai', existing.id);
+    db.prepare('UPDATE laporan_bulanan SET divisi=?, kegiatan=?, target=?, realisasi=?, kendala=?, catatan=?, foto=IFNULL(?,foto), file_laporan=IFNULL(?,file_laporan), status=? WHERE id=?')
+      .run(divisi, kegiatan, target, realisasi, kendala, catatan, foto, file_laporan, 'Belum Dinilai', existing.id);
     log(req.user, 'Laporan', `Update laporan ${bulan} (${divisi})`);
   } else {
-    db.prepare('INSERT INTO laporan_bulanan (pegawai_id,divisi,bulan,kegiatan,target,realisasi,kendala,catatan,foto) VALUES (?,?,?,?,?,?,?,?,?)')
-      .run(pegawai_id, divisi, bulan, kegiatan, target, realisasi, kendala, catatan, foto);
+    db.prepare('INSERT INTO laporan_bulanan (pegawai_id,divisi,bulan,kegiatan,target,realisasi,kendala,catatan,foto,file_laporan) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .run(pegawai_id, divisi, bulan, kegiatan, target, realisasi, kendala, catatan, foto, file_laporan);
     log(req.user, 'Laporan', `Upload laporan ${bulan} (${divisi})`);
   }
   res.json({ ok: true });
